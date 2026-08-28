@@ -1,0 +1,48 @@
+{
+ "run_id": "BASE_randominit",
+ "config": {
+  "d_model": 192,
+  "n_layers": 4,
+  "n_heads": 4,
+  "d_ffn": 512,
+  "seq_len": 128,
+  "vocab": 8192,
+  "batch": 64,
+  "steps": 0,
+  "lr": 0.0003,
+  "weight_decay": 0.04,
+  "warmup": 500,
+  "tau": 0.996,
+  "clip": 1.0,
+  "optimizer": "adamw",
+  "arm": "cos",
+  "mlm_alpha": 0.1,
+  "vic_mu": 25.0,
+  "vic_nu": 1.0,
+  "ldb_beta": 0.01,
+  "ldb_eps": 0.0001,
+  "ldb_kappa": 1.0,
+  "cell": "B",
+  "seed": 0,
+  "data": "wikitext",
+  "diag_every": 250,
+  "device": "auto"
+ },
+ "minutes": 0.00479501485824585,
+ "diagnostics": [
+  {
+   "step": 0,
+   "loss": NaN,
+   "lr": 6e-07,
+   "lam_min": 5.1444054901511e-11,
+   "eff_rank": 49.81781370925855,
+   "w_frob": 7.999496936798096
+  }
+ ],
+ "probes": {
+  "agnews": 0.6039473684210527,
+  "sst2": 0.5974770642201835,
+  "wordcontent": 0.9944,
+  "pos": 0.6938
+ }
+}

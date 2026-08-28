@@ -1,0 +1,6 @@
+LOW-PRESSURE STATE at eta=1, canonical config (d=24,n=384,12000 steps)
+  objective      setting    lam_min   offdiag
+     VICReg         nu=1    0.53362   0.09741
+     VICReg      nu=4096    0.92456   0.00000
+        LDB    eps=1e-02    0.46087   0.21082
+        LDB    eps=1e-04    0.47196   0.21154
