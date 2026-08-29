@@ -10,5 +10,8 @@ scikit-learn>=1.3
 # verification/bridge_experiment.py, verification/bridge_control2.py
 nltk>=3.8
 
+# verification/verify_p1_ci.py, verification/table3_ci.py
+scipy>=1.11
+
 # figures/make_figures.py, figures/make_equations.py
 matplotlib>=3.7

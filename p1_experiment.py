@@ -54,7 +54,9 @@ DATA = ROOT / "data"
 # than the file name -- so the version is printed instead, by selftest and
 # at the top of every run. If the banner does not say P1b, the old file is
 # still the one being executed.
-SCRIPT_VERSION = "2026-08-28 P1b  (49-run ledger: 34 pre-registered + 15)"
+SCRIPT_VERSION = ("2026-08-28 P1c  (141-run ledger: 34 pre-registered + 15 "
+                   "P1b + 92 power extension, 3x seeds on every cell/arm "
+                   "that had 5 or 3)")
 
 CELLS = {"A": (8, 2), "B": (8, 4), "D": (4, 8),
          "E": (32, 1), "F": (16, 2), "G": (2, 16)}
@@ -123,6 +125,35 @@ def run_ledger():
         for s in range(5):
             runs.append((f"P1b_{tag}_seed{s}", Config(cell=cell, seed=s)))
     runs.append(("BASE_randominit", Config(cell="B", seed=0, steps=0)))
+
+    # ---- power extension (added after the 49-run campaign was frozen) ----
+    # Seeds 5-14 for every cell/arm that had 5, and seeds 3-8 for the two
+    # objective arms that had 3, bringing each to 3x its original count.
+    # This is an extension of statistical power on the SAME pre-registered
+    # comparisons, not a new hypothesis or a new cell -- P1, P1b and the
+    # objective-arm decision rules are unchanged, only n grows. Appended
+    # after every original-wave run (including P1b and BASE) so a
+    # partially-finished original campaign is never disturbed, matching
+    # the same discipline used when the P1b wave itself was added. Run IDs
+    # continue the existing seed numbering rather than renumbering
+    # anything, so results/<run_id>.json resume-detection needs no change.
+    for cell in ("A", "B", "D"):
+        for s in range(5, 15):
+            runs.append((f"P1_{cell}_seed{s}", Config(cell=cell, seed=s)))
+    for s in range(5, 15):
+        runs.append((f"P1_Aeq_seed{s}",
+                     Config(cell="A", seed=s, steps=18000)))
+    for s in range(5, 15):
+        runs.append((f"P4_Bmlm_seed{s}",
+                     Config(cell="B", seed=s, arm="mlm")))
+    for cell, tag in (("E", "l1"), ("F", "l2"), ("G", "l16")):
+        for s in range(5, 15):
+            runs.append((f"P1b_{tag}_seed{s}", Config(cell=cell, seed=s)))
+    for s in range(3, 9):
+        runs.append((f"S6_Bvicreg_seed{s}",
+                     Config(cell="B", seed=s, arm="vicreg")))
+        runs.append((f"S6_Bldb_seed{s}",
+                     Config(cell="B", seed=s, arm="ldb")))
     return runs
 
 
@@ -608,12 +639,20 @@ def cmd_selftest():
     led = run_ledger()
     ids = [r for r, _ in led]
     # count is derived, not hardcoded: an earlier version asserted 34 and
-    # failed the moment the P1b curve was appended
+    # failed the moment the P1b curve was appended. The power extension
+    # (seeds 5-14 on every 5-seed cell/arm, seeds 3-8 on the two 3-seed
+    # objective arms) is a fixed, fully-determined addition, so its size
+    # is a worked-out constant rather than re-derived at runtime -- but the
+    # duplicate-ID check just below is what actually catches a mistake
+    # here, not this arithmetic.
     assert len(ids) == len(set(ids)), "duplicate run id in the ledger"
-    n_p1b = len([i for i in ids if i.startswith("P1b_")])
-    assert len(ids) == 34 + n_p1b, "unexpected ledger size"
-    print("  ledger: %d unique runs (%d pre-registered + %d P1b) -> OK"
-          % (len(ids), 34, n_p1b))
+    n_p1b = len([i for i in ids if i.startswith("P1b_") and
+                 int(i.rsplit("seed", 1)[1]) < 5])
+    n_power_ext = 92  # 3x(A,B,D) + Aeq + P4mlm + 3x(E,F,G) at 10 new seeds
+                       # each (70) + VICReg + LDB at 6 new seeds each (12)
+    assert len(ids) == 34 + n_p1b + n_power_ext, "unexpected ledger size"
+    print("  ledger: %d unique runs (%d pre-registered + %d P1b + %d power "
+          "extension) -> OK" % (len(ids), 34, n_p1b, n_power_ext))
     # every cell must admit its (k, l) at T = 128: k blocks of length l
     # with at least one gap between them need k*l + (k-1) <= T
     for cell, (k, l) in CELLS.items():

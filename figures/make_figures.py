@@ -7,11 +7,11 @@ from memory. Figures 5 and 6 need results/summary.csv and are added once
 the training ledger has finished.
 
 Figure numbers follow the order of first citation in the manuscript
-(Section 3.1, 3.1, 3.3, 3.5); the file names carry the content so that
-renumbering stays visible.
+(Section 3.1, 3.1, 3.3, 3.5), which is what Elsevier requires; the file
+names carry the content so that renumbering stays visible.
 
 Output: figures/figN_name.{pdf,eps,png}
-  pdf, eps  vector, resolution independent
+  pdf, eps  vector, resolution independent (the form Elsevier wants)
   png       raster at 600 dpi, for drafts and slides
 
 Run:  python make_figures.py
@@ -311,15 +311,17 @@ def fig3_eps_law():
 def fig5_p1b_curve():
     """The span-length curve at fixed masking ratio, and the effect sizes
     the same apparatus did resolve. Every value is read from the run
-    records in results_final/; nothing is transcribed."""
+    records in results/; nothing is transcribed."""
     import json
 
-    R = pathlib.Path(__file__).resolve().parent / "results_final"
+    R = pathlib.Path(__file__).resolve().parent.parent / "results"
+    if not R.exists():
+        R = pathlib.Path(__file__).resolve().parent / "results_final"
 
     def probes(rid):
         return json.loads((R / (rid + ".json")).read_text())["probes"]
 
-    def cell(prefix, key, n=5):
+    def cell(prefix, key, n=15):
         return np.array([probes("%s_seed%d" % (prefix, s))[key]
                          for s in range(n)])
 
@@ -367,9 +369,9 @@ def fig5_p1b_curve():
         labels.append(r"$l=%d$ vs $l=4$" % l)
         vals.append(d.mean())
         kinds.append("geometry")
-    for name, pre, n in (("+ MLM", "P4_Bmlm", 5),
-                         ("+ VICReg", "S6_Bvicreg", 3),
-                         ("+ LDB", "S6_Bldb", 3)):
+    for name, pre, n in (("+ MLM", "P4_Bmlm", 15),
+                         ("+ VICReg", "S6_Bvicreg", 9),
+                         ("+ LDB", "S6_Bldb", 9)):
         d = cell(pre, "agnews", n).mean() - cell("P1_B", "agnews").mean()
         labels.append(name)
         vals.append(d * 100)
@@ -385,14 +387,14 @@ def fig5_p1b_curve():
                  color=SKY if k == "geometry" else (VERM if v < 0 else GREEN),
                  edgecolor="white", linewidth=0.8, zorder=2)
     axR.axvline(0, color=INK, linewidth=0.9, zorder=3)
-    mde = 0.54
+    mde = 0.25
     axR.axvspan(-mde, mde, color=ORANGE, alpha=0.16, zorder=0)
     axR.set_yticks(y)
     axR.set_yticklabels(labels, fontsize=7.5)
     axR.set_xlabel("change in AG News accuracy (points)")
     axR.set_title("(b) resolved and unresolved effects", loc="left")
     axR.text(0.75, len(vals) - 0.7,
-             "shaded: below the\nminimum detectable\neffect (0.54 pts)",
+             "shaded: below the\nminimum detectable\neffect (0.25 pts)",
              fontsize=7.5, color="#A05000", va="top", fontweight="bold")
 
     save(fig, "fig5_span_length_curve")
@@ -405,7 +407,9 @@ def fig6_spectral_trajectories():
     every 250 steps in each run record."""
     import json
 
-    R = pathlib.Path(__file__).resolve().parent / "results_final"
+    R = pathlib.Path(__file__).resolve().parent.parent / "results"
+    if not R.exists():
+        R = pathlib.Path(__file__).resolve().parent / "results_final"
 
     def diag(prefix, n, key):
         runs = [json.loads((R / ("%s_seed%d.json" % (prefix, s))).read_text())
@@ -417,9 +421,9 @@ def fig6_spectral_trajectories():
     def probes(rid):
         return json.loads((R / (rid + ".json")).read_text())["probes"]
 
-    arms = [("cosine only", "P1_B", 5, BLUE, "-", "o"),
-            ("+ VICReg", "S6_Bvicreg", 3, VERM, "--", "s"),
-            ("+ log-det", "S6_Bldb", 3, GREEN, ":", "^")]
+    arms = [("cosine only", "P1_B", 15, BLUE, "-", "o"),
+            ("+ VICReg", "S6_Bvicreg", 9, VERM, "--", "s"),
+            ("+ log-det", "S6_Bldb", 9, GREEN, ":", "^")]
 
     fig, (axL, axM, axR) = plt.subplots(1, 3, figsize=(DBL_W, 2.6),
                                         gridspec_kw={"width_ratios":
@@ -444,7 +448,7 @@ def fig6_spectral_trajectories():
     axM.grid(True, which="major", linewidth=0.4, color=GRID)
 
     # and the probe moves the other way
-    B = np.mean([probes("P1_B_seed%d" % s)["agnews"] for s in range(5)])
+    B = np.mean([probes("P1_B_seed%d" % s)["agnews"] for s in range(15)])
     xs, ys, cs = [], [], []
     for name, pre, n, c, lsty, mk in arms:
         _, er = diag(pre, n, "eff_rank")

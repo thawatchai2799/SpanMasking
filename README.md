@@ -4,7 +4,11 @@ Replication package for a study of span masking in JEPA-style language
 representation learning. The repository contains:
 
 - the exact training/experiment script that produced every run,
-- the full set of 49 run records (JSON) and the aggregated summary table,
+- the full set of 141 run records (JSON) and the aggregated summary
+  table: the 34-run pre-registered campaign, a 15-run span-length
+  extension, and a 92-run power extension that triples the seed count of
+  every cell and arm (15 seeds for the masking cells, 9 for the objective
+  arms),
 - the numerical verification scripts for every theorem and proposition in
   the paper, run independently of the training pipeline, and
 - the code that generates every figure in the paper directly from the
@@ -25,6 +29,11 @@ verification/          numerical checks for every theorem and proposition,
   verify_thm1.py            Theorem 1 (boundary screening): Gaussian sweep
                              and an exhaustive discrete-chain enumeration
   verify_unbounded.py       Proposition 4 (unbounded objective)
+  verify_p1_ci.py           P1 paired confidence intervals and exact
+                             Wilcoxon tests, at the registered five seeds
+                             and the extended fifteen
+  table3_ci.py              Table 3 confidence intervals (Welch and
+                             seed-paired constructions)
   canonical_thresholds.py   single source for every collapse threshold
                              quoted anywhere in the paper
   jepa_linear.py            linear-JEPA pilot used to test the spectral
@@ -50,7 +59,7 @@ figures/                figure-generation code and its output
                               images (see note below)
   fig1_*.pdf/.png ... fig6_*.pdf/.png
 
-results/                 the 49 run records this study reports
+results/                 the 141 run records this study reports
   <run_id>.json              one file per run: config, per-step
                               diagnostics, and final probe scores
   summary.csv                 aggregated table over all runs
@@ -94,12 +103,10 @@ python make_equations.py   # display-equation images used in the paper
 from `results/summary.csv` / the individual run JSON files; it does not
 take any number as a hand-entered constant.
 
-Note on `make_equations.py`: figures and equations are rendered to image
-files rather than produced as native word-processor equation objects,
-because the equation objects could not be reliably re-verified visually in
-the tooling used to prepare this manuscript. Rendering to an image kept
-every equation checkable by eye against the source LaTeX-style expression
-before it was used in the paper.
+Note on `make_equations.py`: the manuscript's display equations are
+native equation objects. This script renders the same expressions to
+reference images, which were used to cross-check the native objects by
+eye during preparation; it is retained for that purpose.
 
 ## Data
 
