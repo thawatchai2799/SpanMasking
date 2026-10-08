@@ -4,11 +4,12 @@ Replication package for a study of span masking in JEPA-style language
 representation learning. The repository contains:
 
 - the exact training/experiment script that produced every run,
-- the full set of 141 run records (JSON) and the aggregated summary
+- the full set of 156 run records (JSON) and the aggregated summary
   table: the 34-run pre-registered campaign, a 15-run span-length
-  extension, and a 92-run power extension that triples the seed count of
+  extension, a 92-run power extension that triples the seed count of
   every cell and arm (15 seeds for the masking cells, 9 for the objective
-  arms),
+  arms), and a 15-run conventional span-masked MLM baseline added after
+  peer review at a reviewer's request (run ids R2_Bmlmonly_seed0-14),
 - the numerical verification scripts for every theorem and proposition in
   the paper, run independently of the training pipeline, and
 - the code that generates every figure in the paper directly from the
@@ -34,6 +35,8 @@ verification/          numerical checks for every theorem and proposition,
                              and the extended fifteen
   table3_ci.py              Table 3 confidence intervals (Welch and
                              seed-paired constructions)
+  mlm_baseline_ci.py        Table 4: the pure span-MLM baseline against
+                             the cosine JEPA cell on all four probes
   canonical_thresholds.py   single source for every collapse threshold
                              quoted anywhere in the paper
   jepa_linear.py            linear-JEPA pilot used to test the spectral
@@ -59,7 +62,7 @@ figures/                figure-generation code and its output
                               images (see note below)
   fig1_*.pdf/.png ... fig6_*.pdf/.png
 
-results/                 the 141 run records this study reports
+results/                 the 156 run records this study reports
   <run_id>.json              one file per run: config, per-step
                               diagnostics, and final probe scores
   summary.csv                 aggregated table over all runs

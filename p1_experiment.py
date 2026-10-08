@@ -54,9 +54,9 @@ DATA = ROOT / "data"
 # than the file name -- so the version is printed instead, by selftest and
 # at the top of every run. If the banner does not say P1b, the old file is
 # still the one being executed.
-SCRIPT_VERSION = ("2026-08-28 P1c  (141-run ledger: 34 pre-registered + 15 "
-                   "P1b + 92 power extension, 3x seeds on every cell/arm "
-                   "that had 5 or 3)")
+SCRIPT_VERSION = ("2026-09-27 P1d  (156-run ledger: 34 pre-registered + 15 "
+                   "P1b + 92 power extension + 15 reviewer-requested pure "
+                   "span-MLM baseline at cell B)")
 
 CELLS = {"A": (8, 2), "B": (8, 4), "D": (4, 8),
          "E": (32, 1), "F": (16, 2), "G": (2, 16)}
@@ -81,7 +81,10 @@ class Config:
     clip: float = 1.0          # global-norm; 0 disables
     optimizer: str = "adamw"   # "adamw" | "sgd" (P3 runs use sgd, no momentum)
     # objective arms
-    arm: str = "cos"           # "cos" | "mlm" | "vicreg" | "ldb"
+    arm: str = "cos"           # "cos" | "mlm" | "vicreg" | "ldb" | "mlmonly"
+    # "mlmonly": conventional span-masked MLM -- cross-entropy on the masked
+    # positions only, no JEPA cosine term, no target encoder. Added at a
+    # reviewer's request as a comparison baseline (R2, review round 1).
     mlm_alpha: float = 0.1
     vic_mu: float = 25.0
     vic_nu: float = 1.0
@@ -154,6 +157,14 @@ def run_ledger():
                      Config(cell="B", seed=s, arm="vicreg")))
         runs.append((f"S6_Bldb_seed{s}",
                      Config(cell="B", seed=s, arm="ldb")))
+    # ---- review-round-1 extension (added 2026-09-27, after peer review) ----
+    # Reviewer 2 asked for a conventional span-masked MLM baseline. Same
+    # encoder, cell B masking, schedule and probes; the objective is
+    # cross-entropy on masked positions alone. Appended after every prior
+    # run so nothing already finished is disturbed; 15 seeds to match B.
+    for s in range(15):
+        runs.append((f"R2_Bmlmonly_seed{s}",
+                     Config(cell="B", seed=s, arm="mlmonly")))
     return runs
 
 
@@ -355,7 +366,7 @@ def train_run(run_id, cfg):
     for p in tgt.parameters():
         p.requires_grad_(False)
     mlm_head = torch.nn.Linear(cfg.d_model, cfg.vocab).to(dev) \
-        if cfg.arm == "mlm" else None
+        if cfg.arm in ("mlm", "mlmonly") else None
 
     params = list(enc.parameters()) + list(pred.parameters())
     if mlm_head is not None:
@@ -392,7 +403,9 @@ def train_run(run_id, cfg):
             pos = torch.as_tensor(diag_pos, device=dev)
             xc = x.clone()
             xc.scatter_(1, pos, MASK)
-            z = pred(gather_positions(enc(xc), pos, torch))
+            z = gather_positions(enc(xc), pos, torch)
+            if cfg.arm != "mlmonly":   # predictor is untrained under pure MLM
+                z = pred(z)
             z = z.reshape(-1, cfg.d_model).double()
             C = covariance(z)
             ev = torch.linalg.eigvalsh(C).clamp(min=0)
@@ -429,6 +442,13 @@ def train_run(run_id, cfg):
             logits = mlm_head(hc)
             tgt_ids = torch.gather(x, 1, pos)
             loss = loss + cfg.mlm_alpha * torch.nn.functional.cross_entropy(
+                logits.reshape(-1, cfg.vocab), tgt_ids.reshape(-1))
+        elif cfg.arm == "mlmonly":
+            # pure MLM: the cosine term is dropped entirely (the predictor
+            # and target encoder receive no gradient and play no role)
+            logits = mlm_head(hc)
+            tgt_ids = torch.gather(x, 1, pos)
+            loss = torch.nn.functional.cross_entropy(
                 logits.reshape(-1, cfg.vocab), tgt_ids.reshape(-1))
         loss = loss + regulariser(zh.reshape(-1, cfg.d_model), cfg, torch)
 
@@ -650,9 +670,11 @@ def cmd_selftest():
                  int(i.rsplit("seed", 1)[1]) < 5])
     n_power_ext = 92  # 3x(A,B,D) + Aeq + P4mlm + 3x(E,F,G) at 10 new seeds
                        # each (70) + VICReg + LDB at 6 new seeds each (12)
-    assert len(ids) == 34 + n_p1b + n_power_ext, "unexpected ledger size"
+    n_r2 = 15         # pure span-MLM baseline, review round 1
+    assert len(ids) == 34 + n_p1b + n_power_ext + n_r2, "unexpected ledger size"
     print("  ledger: %d unique runs (%d pre-registered + %d P1b + %d power "
-          "extension) -> OK" % (len(ids), 34, n_p1b, n_power_ext))
+          "extension + %d review baseline) -> OK"
+          % (len(ids), 34, n_p1b, n_power_ext, n_r2))
     # every cell must admit its (k, l) at T = 128: k blocks of length l
     # with at least one gap between them need k*l + (k-1) <= T
     for cell, (k, l) in CELLS.items():
