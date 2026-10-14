@@ -150,7 +150,8 @@ def fig1_schematic():
 def fig2_theorem1():
     """Theorem 1 and Corollary 1.1. Left: total information saturates in
     the span length at -log(1-rho^2). Right: at a fixed masking budget
-    the information is proportional to the block count. Curves are the
+    the total grows with the block count while the per-block
+    amount stays bounded. Curves are the
     closed form verified in verify_thm1.py (max error 1.5e-13 nats)."""
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(DBL_W, 2.7))
 
@@ -179,7 +180,7 @@ def fig2_theorem1():
     ks = np.array([1, 2, 4, 8, 16, 32])
     per_block = mi_block_ar1(m / ks, rho)
     axR.plot(ks, ks * per_block, linestyle="-", marker="o", color=BLUE,
-             label="total  " + r"$I \propto k$")
+             label="total (grows with $k$)")
     axR.plot(ks, per_block, linestyle="--", marker="s", color=VERM,
              label="per block (bounded)")
     axR.plot(ks, ks * per_block / m, linestyle=":", marker="^", color=GREEN,
@@ -188,7 +189,7 @@ def fig2_theorem1():
     axR.set_yscale("log")
     axR.set_xlabel(r"block count $k$   (fixed budget $m = 32$, $l = m/k$)")
     axR.set_ylabel("information (nats)")
-    axR.set_title(r"(b) fixed budget: evidence scales with $k$", loc="left")
+    axR.set_title(r"(b) fixed budget: total grows with $k$", loc="left")
     axR.legend(frameon=False, loc="upper left")
 
     save(fig, "fig2_theorem1_saturation")
